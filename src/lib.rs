@@ -37,27 +37,23 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
             let mut fields = line.split_terminator(',').collect::<Vec<_>>();
             
             let mut name = fields[0].trim_matches('"').to_string();
+			
+			let patterns = vec!["(S)", "(P)"];
+		
+			for pattern in patterns {
+				if name.ends_with(pattern) {
+					let pattern_length = pattern.len();
+					println!("В поле c именем \"{}\" удален постфикс - {}", &name, &pattern);
+					name.truncate(name.len() - pattern_length);
+				}
+				else if name.ends_with(pattern.to_lowercase().as_str()) {
+					let pattern_length = pattern.len();
+					println!("В поле c именем \"{}\" удален постфикс - {} Замечание: постфикс должен быть записан в верхнем регистре: {}", &name, &pattern.to_lowercase(), &pattern);
+					name.truncate(name.len() - pattern_length);					
+				}
+			}			
 
-			match &name[(name.len() - 3)..] {
-				"(S)" => {
-					println!("в поле c именем \"{}\" удален постфикс", &name);
-					name = name.replace("(S)", "").trim_end().to_string();
-				},
-				"(P)" => {
-					println!("в поле c именем \"{}\" удален постфикс", &name);
-					name = name.replace("(S)", "").trim_end().to_string();
-				},
-				"(p)" => {
-					println!("В поле {} постфикс должен иметь верхний регистр (p) -> (P)", &name);
-				},
-				"(s)" => {
-					println!("В поле {} постфикс должен иметь верхний регистр (s) -> (S)", &name);
-				},
-				_ => (),
-			}
-
-
-            fields[0] = name.as_str();
+            fields[0] = name.trim_end();
 			let fields = fields.iter().map(|&f| f.trim_matches('"').to_string()).collect::<Vec<String>>();
 			vec_fields.push(fields);
         }
@@ -70,7 +66,7 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
 		let mut writer = WriterBuilder::new()
 		.delimiter(b',')
 		.quote_style(csv::QuoteStyle::Always)
-        .from_writer(File::create(format!("refactored{}.csv", i + 1))?);
+        .from_writer(File::create(format!("refactored_{}",path))?);
 
 		vec_fields.iter().for_each(|c| {
 			writer.write_record(c);
